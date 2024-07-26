@@ -10,7 +10,7 @@ export class FuelService {
 
   constructor(private httpClient: HttpClient) {}
 
-  getLyrics(
+  getStations(
     carburant: string,
     locatie: string,
     nume_locatie: string,

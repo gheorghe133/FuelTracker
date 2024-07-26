@@ -71,7 +71,11 @@
               <div class="dropdown-content">
                 <div class="dropdown-item">
                   <label class="checkbox">
-                    <input type="checkbox" (change)="selectAll($event)" />
+                    <input
+                      type="checkbox"
+                      (change)="selectAll($event)"
+                      [checked]="areAllSelected()"
+                    />
                     Toate
                   </label>
                 </div>
@@ -86,10 +90,6 @@
                     />
                     {{ station }}
                   </label>
-                </div>
-                <hr class="dropdown-divider" />
-                <div class="dropdown-item">
-                  <label class="checkbox"> Fǎrǎ preț </label>
                 </div>
               </div>
             </div>
@@ -119,8 +119,53 @@
       <p class="error-message">{{ this.errorMessage }}</p>
     </div>
   </div>
+</section>
 
+<section class="section">
   <div class="container">
-    <div id="map" style="height: 400px"></div>
+    <table class="table is-fullwidth is-striped is-hoverable">
+      <thead>
+        <tr>
+          <th>Nr.</th>
+          <th>Date</th>
+          <th>Price</th>
+          <th>Gas station</th>
+          <th>City</th>
+          <th>Address</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for(result of fuelResults; track $index){
+        <tr>
+          <th>{{ $index + 1 }}</th>
+          <td>
+            {{ result.date }}
+          </td>
+          <td>
+            {{ result.price }}
+          </td>
+          <td>
+            <div class="is-flex is-align-items-center">
+              <img
+                class="image is-32x32 mr-3"
+                src="https://www.peco.md/{{ result.image }}"
+                alt="{{ result.gasStation }}"
+                title="{{ result.gasStation }}"
+              />
+              <span>
+                {{ result.gasStation }}
+              </span>
+            </div>
+          </td>
+          <td>
+            {{ result.city }}
+          </td>
+          <td>
+            {{ result.address }}
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
   </div>
 </section>

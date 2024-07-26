@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { FuelService } from './services/FuelService/fuel.service';
 import {
@@ -47,6 +47,8 @@ export class AppComponent {
   errorMessage!: string;
   hasError = false;
   loader = false;
+  fuelResults = [];
+  private updatingQueryParams = false;
 
   constructor(
     private fuelService: FuelService,
@@ -75,6 +77,7 @@ export class AppComponent {
           nume_locatie_param &&
           retea_param
         ) {
+          this.updatingQueryParams = true;
           this.searchForm.patchValue({
             carburant: carburant || 'Benzina_Regular',
             locatie: locatie || '',
@@ -85,26 +88,31 @@ export class AppComponent {
             this.selectedStations = Array.isArray(retea) ? retea : [retea];
           }
 
-          this.search;
+          this.search();
+          this.updatingQueryParams = false;
         }
       }
     );
   }
 
   public search() {
+    if (this.updatingQueryParams) {
+      return;
+    }
+
     const { carburant, locatie, nume_locatie } = this.searchForm.value;
     const retea = this.selectedStations;
 
     this.loader = true;
 
     this.fuelService
-      .getLyrics(carburant, locatie, nume_locatie, retea)
+      .getStations(carburant, locatie, nume_locatie, retea)
       .subscribe({
-        next: (result) => {
-          console.log(result);
+        next: (result: any[]) => {
           this.hasError = false;
           this.loader = false;
-          this.updateQueryParams();
+          console.log(result);
+          this.fuelResults = result;
         },
         error: (error) => {
           console.error(error);
@@ -143,18 +151,24 @@ export class AppComponent {
     return this.selectedStations.includes(station);
   }
 
+  areAllSelected(): boolean {
+    return this.selectedStations.length === this.gasStations.length;
+  }
+
   cancel() {
     this.searchForm.setValue({
       carburant: 'Benzina_Regular',
       locatie: null,
       nume_locatie: null,
     });
+    this.fuelResults = [];
     this.selectedStations = [];
     this.clearQueryParams();
   }
 
   private updateQueryParams() {
     const { carburant, locatie, nume_locatie } = this.searchForm.value;
+
     const queryParams = {
       carburant,
       locatie,
@@ -162,11 +176,17 @@ export class AppComponent {
       retea:
         this.selectedStations.length > 0 ? this.selectedStations : undefined,
     };
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams,
-      queryParamsHandling: 'merge',
-    });
+
+    this.updatingQueryParams = true;
+    this.router
+      .navigate([], {
+        relativeTo: this.route,
+        queryParams,
+        queryParamsHandling: 'merge',
+      })
+      .then(() => {
+        this.updatingQueryParams = false;
+      });
   }
 
   private clearQueryParams() {
