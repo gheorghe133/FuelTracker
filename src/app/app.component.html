@@ -136,7 +136,10 @@
     </thead>
     <tbody>
       @for(result of paginatedResults; track $index){
-      <tr>
+      <tr
+        [ngClass]="{ 'has-background-link': selectedIndex === $index }"
+        (click)="highlightStation(result)"
+      >
         <th>{{ $index + 1 }}</th>
         <td>
           {{ result.date }}

@@ -297,4 +297,57 @@ export class AppComponent {
   public previousPage() {
     this.goToPage(this.currentPage - 1);
   }
+
+  selectedIndex: number | null = null;
+  selectedMarker: L.Marker | null = null; // Markerul selectat pe hartă
+
+  // Alte metode existente
+
+  highlightStation(station: any) {
+    // Setează indexul rândului selectat
+    this.selectedIndex = this.paginatedResults.indexOf(station);
+
+    // Geocodare pentru adresa stației selectate
+    const address = `${station.address}, ${station.city}`;
+    this.geocodingService.geocodeAddress(address).subscribe({
+      next: (geoResult: any) => {
+        if (geoResult.results.length > 0) {
+          const { lat, lng } = geoResult.results[0].geometry;
+
+          // Dacă există un marker anterior selectat, elimină-l de pe hartă
+          if (this.selectedMarker) {
+            this.map.removeLayer(this.selectedMarker);
+          }
+
+          // Creează un nou marker pentru stația selectată
+          const stationIcon = L.icon({
+            iconUrl: `https://www.peco.md/${station.image}`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32],
+          });
+
+          this.selectedMarker = L.marker([lat, lng], { icon: stationIcon })
+            .addTo(this.map)
+            .bindPopup(
+              `
+              <div style="width: 100px;">
+                <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 100%; height: auto;"/>
+                <p><strong>${station.gasStation}</strong></p>
+                <p>Preț: ${station.price}</p>
+                <p>Data: ${station.date}</p>
+              </div>
+            `
+            )
+            .openPopup();
+
+          // Mutați centrul hărții pe locația stației selectate
+          this.map.setView([lat, lng], 13); // Ajustează nivelul de zoom după necesitate
+        }
+      },
+      error: (error) => {
+        console.error('Geocoding error:', error);
+      },
+    });
+  }
 }
