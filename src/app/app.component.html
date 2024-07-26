@@ -216,29 +216,25 @@
       </tbody>
     </table>
   </div>
-  <div class="grid">
-    <div class="cell">
-      <button
-        class="button is-fullwidth"
-        (click)="previousPage()"
-        [disabled]="currentPage === 1"
-      >
-        Previous
-      </button>
-    </div>
-    <div class="cell">
-      <button class="button is-fullwidth">
-        {{ currentPage }} / {{ totalPages }}
-      </button>
-    </div>
-    <div class="cell">
-      <button
-        class="button is-fullwidth"
-        (click)="nextPage()"
-        [disabled]="currentPage === totalPages"
-      >
-        Next
-      </button>
-    </div>
+  <div class="pagination is-centered">
+    <button
+      class="button is-fullwidth pagination-previous"
+      (click)="previousPage()"
+      [disabled]="currentPage === 1"
+    >
+      Previous
+    </button>
+
+    <button class="button is-fullwidth pagination-previous">
+      {{ currentPage }} / {{ totalPages }}
+    </button>
+
+    <button
+      class="button is-fullwidth pagination-next"
+      (click)="nextPage()"
+      [disabled]="currentPage === totalPages"
+    >
+      Next
+    </button>
   </div>
 </section>
