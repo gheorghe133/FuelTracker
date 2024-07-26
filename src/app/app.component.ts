@@ -77,7 +77,7 @@ export class AppComponent implements OnInit {
   sortField = '';
   sortOrder: 'asc' | 'desc' = 'asc';
 
-  currentTheme: string;
+  currentTheme: string | undefined;
 
   constructor(
     private fuelService: FuelService,
@@ -209,6 +209,14 @@ export class AppComponent implements OnInit {
     this.fuelResults = [];
     this.selectedStations = [];
     this.clearMarkers();
+
+    if (this.selectedMarker) {
+      this.selectedMarker.closePopup();
+      this.map.removeLayer(this.selectedMarker);
+      this.selectedMarker = null;
+    }
+
+    this.map.setView([this.latitude, this.longitude], this.zoom);
   }
 
   get totalPages(): number {
