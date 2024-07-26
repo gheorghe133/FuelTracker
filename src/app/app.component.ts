@@ -11,11 +11,18 @@ import {
 import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
 import { GeocodingService } from './services/GeoCodingService/geocoding.service';
+import { SortPipe } from './pipes/SortPipe/sort.pipe';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, CommonModule, RouterOutlet],
+  imports: [
+    ReactiveFormsModule,
+    FormsModule,
+    CommonModule,
+    RouterOutlet,
+    SortPipe,
+  ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
@@ -60,7 +67,7 @@ export class AppComponent {
   currentPage = 1;
   itemsPerPage = 10;
   totalItems = 0; // Numărul total de elemente
-  paginatedResults: any[] = [];
+  paginatedResults = [];
 
   constructor(
     private fuelService: FuelService,
@@ -349,5 +356,28 @@ export class AppComponent {
         console.error('Geocoding error:', error);
       },
     });
+  }
+
+  sortField: string = '';
+  sortOrder: 'asc' | 'desc' = 'asc';
+
+  sort(field: string) {
+    // Toggle sort order if sorting by the same field
+    if (this.sortField === field) {
+      this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortOrder = 'asc';
+    }
+
+    // Sort the results
+    this.fuelResults = new SortPipe().transform(
+      this.fuelResults,
+      this.sortField,
+      this.sortOrder
+    );
+
+    // Reapply pagination
+    this.paginateResults();
   }
 }

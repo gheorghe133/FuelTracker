@@ -126,12 +126,30 @@
   <table class="table is-fullwidth is-striped is-hoverable">
     <thead>
       <tr>
-        <th>Nr.</th>
-        <th>Date</th>
-        <th>Price</th>
-        <th>Gas station</th>
-        <th>City</th>
-        <th>Address</th>
+        <th (click)="sort('index')">
+          Nr. <i class="fa-solid fa-sort-up"></i>
+          <i class="fa-solid fa-sort-down"></i>
+        </th>
+        <th (click)="sort('date')">
+          Date <i class="fa-solid fa-sort-up"></i>
+          <i class="fa-solid fa-sort-down"></i>
+        </th>
+        <th (click)="sort('price')">
+          Price <i class="fa-solid fa-sort-up"></i>
+          <i class="fa-solid fa-sort-down"></i>
+        </th>
+        <th (click)="sort('gasStation')">
+          Gas station <i class="fa-solid fa-sort-up"></i>
+          <i class="fa-solid fa-sort-down"></i>
+        </th>
+        <th (click)="sort('city')">
+          City <i class="fa-solid fa-sort-up"></i>
+          <i class="fa-solid fa-sort-down"></i>
+        </th>
+        <th (click)="sort('address')">
+          Address <i class="fa-solid fa-sort-up"></i>
+          <i class="fa-solid fa-sort-down"></i>
+        </th>
       </tr>
     </thead>
     <tbody>
