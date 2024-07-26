@@ -57,6 +57,11 @@ export class AppComponent {
   longitude = 28.8638;
   zoom = 7;
 
+  currentPage = 1;
+  itemsPerPage = 10;
+  totalItems = 0; // Numărul total de elemente
+  paginatedResults: any[] = [];
+
   constructor(
     private fuelService: FuelService,
     private geocodingService: GeocodingService,
@@ -133,12 +138,16 @@ export class AppComponent {
           this.loader = false;
           console.log(result);
           this.fuelResults = result;
+          this.totalItems = result.length; // Setează numărul total de elemente
 
           // Curăță markerii anteriori
           this.clearMarkers();
 
+          // Paginați rezultatele
+          this.paginateResults();
+
           // Geocodare pentru fiecare adresă
-          result.forEach((station) => {
+          this.paginatedResults.forEach((station) => {
             const address = `${station.address}, ${station.city}`;
             this.geocodingService.geocodeAddress(address).subscribe({
               next: (geoResult: any) => {
@@ -155,12 +164,12 @@ export class AppComponent {
 
                   // Creează HTML-ul pentru popup
                   const popupContent = `
-                  <div style="width: 100px;">
-                    <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 100%; height: auto;"/>
-                    <p><strong>${station.gasStation}</strong></p>
-                    <p>Preț: ${station.price}</p>
-                    <p>Data: ${station.date}</p>
-                  </div>
+                    <div style="width: 100px;">
+                      <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 100%; height: auto;"/>
+                      <p><strong>${station.gasStation}</strong></p>
+                      <p>Preț: ${station.price}</p>
+                      <p>Data: ${station.date}</p>
+                    </div>
                   `;
 
                   const marker = L.marker([lat, lng], { icon: stationIcon })
@@ -262,5 +271,30 @@ export class AppComponent {
       relativeTo: this.route,
       queryParams: {},
     });
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.totalItems / this.itemsPerPage);
+  }
+
+  private paginateResults() {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    this.paginatedResults = this.fuelResults.slice(startIndex, endIndex);
+  }
+
+  public goToPage(page: number) {
+    if (page > 0 && page <= Math.ceil(this.totalItems / this.itemsPerPage)) {
+      this.currentPage = page;
+      this.paginateResults();
+    }
+  }
+
+  public nextPage() {
+    this.goToPage(this.currentPage + 1);
+  }
+
+  public previousPage() {
+    this.goToPage(this.currentPage - 1);
   }
 }

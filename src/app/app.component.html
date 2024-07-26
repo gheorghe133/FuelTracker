@@ -135,7 +135,7 @@
       </tr>
     </thead>
     <tbody>
-      @for(result of fuelResults; track $index){
+      @for(result of paginatedResults; track $index){
       <tr>
         <th>{{ $index + 1 }}</th>
         <td>
@@ -167,4 +167,23 @@
       }
     </tbody>
   </table>
+</section>
+<section class="section">
+  <div *ngIf="fuelResults.length > 0">
+    <button
+      class="button"
+      (click)="previousPage()"
+      [disabled]="currentPage === 1"
+    >
+      Previous
+    </button>
+    <button class="button">{{ currentPage }} / {{ totalPages }}</button>
+    <button
+      class="button"
+      (click)="nextPage()"
+      [disabled]="currentPage === totalPages"
+    >
+      Next
+    </button>
+  </div>
 </section>

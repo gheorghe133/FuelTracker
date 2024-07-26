@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root',
 })
 export class GeocodingService {
-  private apiKey = '890b833542b747058c0073b1611c4160'; // Înlocuiește cu cheia ta API
+  private apiKey = '890b833542b747058c0073b1611c4160';
   private apiUrl = 'https://api.opencagedata.com/geocode/v1/json';
 
   constructor(private http: HttpClient) {}
