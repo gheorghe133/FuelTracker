@@ -1,6 +1,5 @@
-import { Component } from '@angular/core';
-import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
-import { FuelService } from './services/FuelService/fuel.service';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 import {
   FormBuilder,
   FormGroup,
@@ -9,15 +8,28 @@ import {
   Validators,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import * as L from 'leaflet';
+
+import { FuelService } from './services/FuelService/fuel.service';
+import { GeocodingService } from './services/GeoCodingService/geocoding.service';
+import { SortPipe } from './pipes/SortPipe/sort.pipe';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, CommonModule, RouterOutlet],
+  imports: [
+    ReactiveFormsModule,
+    FormsModule,
+    CommonModule,
+    RouterOutlet,
+    SortPipe,
+  ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
+  @ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef;
+
   gasStations: string[] = [
     'Avante',
     'Bemol',
@@ -40,19 +52,37 @@ export class AppComponent {
     'Tirex - (fǎrǎ preț)',
   ];
 
-  title = 'Benzeno';
+  title = 'Benzo';
   searchForm: FormGroup;
   dropdownOpen = false;
   selectedStations: string[] = [];
   errorMessage!: string;
   hasError = false;
   loader = false;
+  fuelResults: any[] = [];
+
+  selectedIndex: number | null = null;
+  selectedMarker: L.Marker | null = null;
+  map!: L.Map;
+  markers: L.Marker[] = [];
+  latitude = 47.0105;
+  longitude = 28.8638;
+  zoom = 7;
+
+  currentPage = 1;
+  itemsPerPage = 15;
+  totalItems = 0;
+  paginatedResults: any[] = [];
+
+  sortField = '';
+  sortOrder: 'asc' | 'desc' = 'asc';
+
+  currentTheme: string | undefined;
 
   constructor(
     private fuelService: FuelService,
-    private formBuilder: FormBuilder,
-    private router: Router,
-    private route: ActivatedRoute
+    private geocodingService: GeocodingService,
+    private formBuilder: FormBuilder
   ) {
     this.searchForm = this.formBuilder.group({
       carburant: ['Benzina_Regular', [Validators.required]],
@@ -62,52 +92,42 @@ export class AppComponent {
   }
 
   ngOnInit() {
-    this.route.queryParams.subscribe(
-      ({ carburant, locatie, nume_locatie, retea }) => {
-        const carburant_param = carburant;
-        const locatie_param = locatie;
-        const nume_locatie_param = nume_locatie;
-        const retea_param = retea;
+    this.initMap();
+    this.applySavedTheme();
+  }
 
-        if (
-          carburant_param &&
-          locatie_param &&
-          nume_locatie_param &&
-          retea_param
-        ) {
-          this.searchForm.patchValue({
-            carburant: carburant || 'Benzina_Regular',
-            locatie: locatie || '',
-            nume_locatie: nume_locatie || '',
-          });
+  private initMap(): void {
+    this.map = L.map('map').setView([this.latitude, this.longitude], this.zoom);
 
-          if (retea) {
-            this.selectedStations = Array.isArray(retea) ? retea : [retea];
-          }
-
-          this.search;
-        }
-      }
-    );
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(this.map);
   }
 
   public search() {
     const { carburant, locatie, nume_locatie } = this.searchForm.value;
     const retea = this.selectedStations;
 
+    this.fuelResults = [];
+    this.selectedIndex = null;
     this.loader = true;
 
     this.fuelService
-      .getLyrics(carburant, locatie, nume_locatie, retea)
+      .getStations(carburant, locatie, nume_locatie, retea)
       .subscribe({
-        next: (result) => {
-          console.log(result);
+        next: (result: any[]) => {
           this.hasError = false;
           this.loader = false;
-          this.updateQueryParams();
+          this.fuelResults = result;
+          this.totalItems = result.length;
+
+          this.clearMarkers();
+          this.paginateResults();
+          this.geocodeStations();
         },
         error: (error) => {
-          console.error(error);
           this.hasError = true;
           this.loader = false;
           this.errorMessage = error.error.error;
@@ -115,17 +135,53 @@ export class AppComponent {
       });
   }
 
+  private clearMarkers() {
+    this.markers.forEach((marker) => this.map.removeLayer(marker));
+    this.markers = [];
+  }
+
+  private geocodeStations() {
+    this.paginatedResults.forEach((station) => {
+      const address = `${station.address}, ${station.city}`;
+      this.geocodingService.geocodeAddress(address).subscribe({
+        next: (geoResult: any) => {
+          if (geoResult.results.length > 0) {
+            const { lat, lng } = geoResult.results[0].geometry;
+            const stationIcon = L.icon({
+              iconUrl: `https://www.peco.md/${station.image}`,
+              iconSize: [32, 32],
+              iconAnchor: [16, 32],
+              popupAnchor: [0, -32],
+            });
+
+            const popupContent = `
+              <div style="width: 100px;">
+                <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 100%; height: auto;"/>
+                <p><strong>${station.gasStation}</strong></p>
+                <p>Preț: ${station.price}</p>
+                <p>Data: ${station.date}</p>
+              </div>
+            `;
+
+            const marker = L.marker([lat, lng], { icon: stationIcon })
+              .addTo(this.map)
+              .bindPopup(popupContent)
+              .openPopup();
+
+            this.markers.push(marker);
+          }
+        },
+        error: (error) => console.error('Geocoding error:', error),
+      });
+    });
+  }
+
   toggleDropdown() {
     this.dropdownOpen = !this.dropdownOpen;
   }
 
   selectAll(event: any) {
-    if (event.target.checked) {
-      this.selectedStations = [...this.gasStations];
-    } else {
-      this.selectedStations = [];
-    }
-    this.updateQueryParams();
+    this.selectedStations = event.target.checked ? [...this.gasStations] : [];
   }
 
   selectStation(station: string, event: any) {
@@ -136,43 +192,136 @@ export class AppComponent {
         (s) => s !== station
       );
     }
-    this.updateQueryParams();
   }
 
   isSelected(station: string): boolean {
     return this.selectedStations.includes(station);
   }
 
+  areAllSelected(): boolean {
+    return this.selectedStations.length === this.gasStations.length;
+  }
+
   cancel() {
-    this.searchForm.setValue({
+    this.searchForm.reset({
       carburant: 'Benzina_Regular',
       locatie: null,
       nume_locatie: null,
     });
+    this.fuelResults = [];
     this.selectedStations = [];
-    this.clearQueryParams();
+    this.clearMarkers();
+
+    if (this.selectedMarker) {
+      this.selectedMarker.closePopup();
+      this.map.removeLayer(this.selectedMarker);
+      this.selectedMarker = null;
+    }
+
+    this.map.setView([this.latitude, this.longitude], this.zoom);
   }
 
-  private updateQueryParams() {
-    const { carburant, locatie, nume_locatie } = this.searchForm.value;
-    const queryParams = {
-      carburant,
-      locatie,
-      nume_locatie,
-      retea:
-        this.selectedStations.length > 0 ? this.selectedStations : undefined,
-    };
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams,
-      queryParamsHandling: 'merge',
+  get totalPages(): number {
+    return Math.ceil(this.totalItems / this.itemsPerPage);
+  }
+
+  private paginateResults() {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    this.paginatedResults = this.fuelResults.slice(
+      startIndex,
+      startIndex + this.itemsPerPage
+    );
+  }
+
+  public goToPage(page: number) {
+    if (page > 0 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.paginateResults();
+    }
+  }
+
+  public nextPage() {
+    this.goToPage(this.currentPage + 1);
+  }
+
+  public previousPage() {
+    this.goToPage(this.currentPage - 1);
+  }
+
+  highlightStation(station: any, index: number) {
+    this.selectedIndex = (this.currentPage - 1) * this.itemsPerPage + index;
+
+    const address = `${station.address}, ${station.city}`;
+    this.geocodingService.geocodeAddress(address).subscribe({
+      next: (geoResult: any) => {
+        if (geoResult.results.length > 0) {
+          const { lat, lng } = geoResult.results[0].geometry;
+
+          if (this.selectedMarker) {
+            this.map.removeLayer(this.selectedMarker);
+          }
+
+          const stationIcon = L.icon({
+            iconUrl: `https://www.peco.md/${station.image}`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32],
+          });
+
+          this.selectedMarker = L.marker([lat, lng], { icon: stationIcon })
+            .addTo(this.map)
+            .bindPopup(
+              `
+              <div style="width: 100px;">
+                <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 100%; height: auto;"/>
+                <p><strong>${station.gasStation}</strong></p>
+                <p>Preț: ${station.price}</p>
+                <p>Data: ${station.date}</p>
+              </div>
+              `
+            )
+            .openPopup();
+
+          this.map.setView([lat, lng], 13);
+
+          this.scrollToMap();
+        }
+      },
+      error: (error) => console.error('Geocoding error:', error),
     });
   }
 
-  private clearQueryParams() {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: {},
+  private scrollToMap() {
+    this.mapContainer.nativeElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
     });
+  }
+
+  sort(field: string) {
+    this.sortField = field;
+    this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    this.fuelResults = new SortPipe().transform(
+      this.fuelResults,
+      this.sortField,
+      this.sortOrder
+    );
+    this.paginateResults();
+  }
+
+  applySavedTheme(): void {
+    const savedTheme = localStorage.getItem('theme');
+    this.currentTheme = savedTheme || 'light';
+    document
+      .getElementsByTagName('html')[0]
+      .setAttribute('data-theme', this.currentTheme);
+  }
+
+  toggleTheme() {
+    this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+    document
+      .getElementsByTagName('html')[0]
+      .setAttribute('data-theme', this.currentTheme);
+    localStorage.setItem('theme', this.currentTheme);
   }
 }
