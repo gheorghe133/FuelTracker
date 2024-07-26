@@ -110,6 +110,8 @@ export class AppComponent implements OnInit {
     const { carburant, locatie, nume_locatie } = this.searchForm.value;
     const retea = this.selectedStations;
 
+    this.fuelResults = [];
+    this.selectedIndex = null;
     this.loader = true;
 
     this.fuelService
@@ -246,8 +248,8 @@ export class AppComponent implements OnInit {
     this.goToPage(this.currentPage - 1);
   }
 
-  highlightStation(station: any) {
-    this.selectedIndex = this.paginatedResults.indexOf(station);
+  highlightStation(station: any, index: number) {
+    this.selectedIndex = (this.currentPage - 1) * this.itemsPerPage + index;
 
     const address = `${station.address}, ${station.city}`;
     this.geocodingService.geocodeAddress(address).subscribe({

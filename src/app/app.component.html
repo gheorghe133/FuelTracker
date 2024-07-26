@@ -194,7 +194,7 @@
               this.selectedIndex ===
               (this.currentPage - 1) * this.itemsPerPage + i
           }"
-          (click)="highlightStation(result)"
+          (click)="highlightStation(result, i)"
         >
           <th>{{ (currentPage - 1) * itemsPerPage + i + 1 }}</th>
           <td>{{ result.date }}</td>
