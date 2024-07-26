@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root',
 })
 export class FuelService {
-  private apiURL = 'http://localhost:3000/fetch-data';
+  private apiURL = 'https://fuel-tracker-backed.vercel.app/fetch-data';
 
   constructor(private httpClient: HttpClient) {}
 
