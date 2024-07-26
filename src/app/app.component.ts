@@ -57,7 +57,6 @@ export class AppComponent {
   hasError = false;
   loader = false;
   fuelResults = [];
-  private updatingQueryParams = false;
   map!: L.Map;
   markers: L.Marker[] = []; // Variabilă pentru markerii curenți
   latitude = 47.0105; // Coordonatele centrale pentru Moldova
@@ -84,36 +83,6 @@ export class AppComponent {
   }
 
   ngOnInit() {
-    this.route.queryParams.subscribe(
-      ({ carburant, locatie, nume_locatie, retea }) => {
-        const carburant_param = carburant;
-        const locatie_param = locatie;
-        const nume_locatie_param = nume_locatie;
-        const retea_param = retea;
-
-        if (
-          carburant_param &&
-          locatie_param &&
-          nume_locatie_param &&
-          retea_param
-        ) {
-          this.updatingQueryParams = true;
-          this.searchForm.patchValue({
-            carburant: carburant || 'Benzina_Regular',
-            locatie: locatie || '',
-            nume_locatie: nume_locatie || '',
-          });
-
-          if (retea) {
-            this.selectedStations = Array.isArray(retea) ? retea : [retea];
-          }
-
-          this.search();
-          this.updatingQueryParams = false;
-        }
-      }
-    );
-
     this.initMap();
   }
 
@@ -128,10 +97,6 @@ export class AppComponent {
   }
 
   public search() {
-    if (this.updatingQueryParams) {
-      return;
-    }
-
     const { carburant, locatie, nume_locatie } = this.searchForm.value;
     const retea = this.selectedStations;
 
@@ -217,7 +182,6 @@ export class AppComponent {
     } else {
       this.selectedStations = [];
     }
-    this.updateQueryParams();
   }
 
   selectStation(station: string, event: any) {
@@ -228,7 +192,6 @@ export class AppComponent {
         (s) => s !== station
       );
     }
-    this.updateQueryParams();
   }
 
   isSelected(station: string): boolean {
@@ -247,37 +210,6 @@ export class AppComponent {
     });
     this.fuelResults = [];
     this.selectedStations = [];
-    this.clearQueryParams();
-  }
-
-  private updateQueryParams() {
-    const { carburant, locatie, nume_locatie } = this.searchForm.value;
-
-    const queryParams = {
-      carburant,
-      locatie,
-      nume_locatie,
-      retea:
-        this.selectedStations.length > 0 ? this.selectedStations : undefined,
-    };
-
-    this.updatingQueryParams = true;
-    this.router
-      .navigate([], {
-        relativeTo: this.route,
-        queryParams,
-        queryParamsHandling: 'merge',
-      })
-      .then(() => {
-        this.updatingQueryParams = false;
-      });
-  }
-
-  private clearQueryParams() {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: {},
-    });
   }
 
   get totalPages(): number {
