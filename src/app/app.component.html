@@ -153,18 +153,15 @@
       </tr>
     </thead>
     <tbody>
-      @for(result of paginatedResults; track $index){
       <tr
-        [ngClass]="{ 'has-background-link': selectedIndex === $index }"
+        *ngFor="let result of paginatedResults; let i = index"
+        [ngClass]="{ 'has-background-link': this.selectedIndex === (this.currentPage - 1) * this.itemsPerPage + i}"
         (click)="highlightStation(result)"
       >
-        <th>{{ $index + 1 }}</th>
-        <td>
-          {{ result.date }}
-        </td>
-        <td>
-          {{ result.price }}
-        </td>
+        <th>{{ (currentPage - 1) * itemsPerPage + i + 1 }}</th>
+        <!-- Display global index -->
+        <td>{{ result.date }}</td>
+        <td>{{ result.price }}</td>
         <td>
           <div class="is-flex is-align-items-center">
             <img
@@ -173,19 +170,12 @@
               alt="{{ result.gasStation }}"
               title="{{ result.gasStation }}"
             />
-            <span>
-              {{ result.gasStation }}
-            </span>
+            <span>{{ result.gasStation }}</span>
           </div>
         </td>
-        <td>
-          {{ result.city }}
-        </td>
-        <td>
-          {{ result.address }}
-        </td>
+        <td>{{ result.city }}</td>
+        <td>{{ result.address }}</td>
       </tr>
-      }
     </tbody>
   </table>
 </section>
