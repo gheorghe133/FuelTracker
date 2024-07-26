@@ -1,0 +1,27 @@
+.form-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.form {
+  width: 100%;
+}
+
+.form .dropdown {
+  width: 100%;
+}
+
+.form .dropdown-trigger {
+  width: 100%;
+}
+
+.form .dropdown .dropdown-menu {
+  width: 100%;
+}
+
+.form .dropdown .dropdown-content {
+  max-height: 270px;
+  overflow-y: scroll;
+}

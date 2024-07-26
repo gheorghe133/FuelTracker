@@ -1,0 +1,21 @@
+<div class="pagination">
+  <button
+    class="button is-fullwidth"
+    (click)="onPreviousPage()"
+    [disabled]="currentPage === 1"
+  >
+    Previous
+  </button>
+
+  <button class="button is-fullwidth">
+    {{ currentPage }} / {{ totalPages }}
+  </button>
+
+  <button
+    class="button is-fullwidth"
+    (click)="onNextPage()"
+    [disabled]="currentPage === totalPages"
+  >
+    Next
+  </button>
+</div>
