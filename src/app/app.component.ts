@@ -9,6 +9,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import * as L from 'leaflet';
 
 @Component({
   selector: 'app-root',
@@ -49,6 +50,11 @@ export class AppComponent {
   loader = false;
   fuelResults = [];
   private updatingQueryParams = false;
+  map!: L.Map;
+  markers: L.Marker[] = []; // Variabilă pentru markerii curenți
+  latitude = 47.0105; // Coordonatele centrale pentru Moldova
+  longitude = 28.8638;
+  zoom = 7;
 
   constructor(
     private fuelService: FuelService,
@@ -93,6 +99,18 @@ export class AppComponent {
         }
       }
     );
+
+    this.initMap();
+  }
+
+  private initMap(): void {
+    this.map = L.map('map').setView([this.latitude, this.longitude], this.zoom);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(this.map);
   }
 
   public search() {
@@ -113,6 +131,20 @@ export class AppComponent {
           this.loader = false;
           console.log(result);
           this.fuelResults = result;
+
+          // Curăță markerii anteriori
+          this.clearMarkers();
+
+          // Adaugă markerii pentru fiecare benzinărie
+          result.forEach((station) => {
+            // Asumăm că `station` conține `latitude` și `longitude`
+            const marker = L.marker([station.latitude, station.longitude])
+              .addTo(this.map)
+              .bindPopup(station.name || 'Unknown')
+              .openPopup();
+
+            this.markers.push(marker);
+          });
         },
         error: (error) => {
           console.error(error);
@@ -121,6 +153,11 @@ export class AppComponent {
           this.errorMessage = error.error.error;
         },
       });
+  }
+
+  private clearMarkers() {
+    this.markers.forEach((marker) => this.map.removeLayer(marker));
+    this.markers = [];
   }
 
   toggleDropdown() {
