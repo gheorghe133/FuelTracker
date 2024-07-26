@@ -1,39 +1,37 @@
-#map {
+.container-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.container-top .container-form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.container-top .container-form app-form {
+  width: 100%;
+}
+
+.container-top .container-map {
+  width: 100%;
+}
+
+.container-top .container-map #map {
   width: 100%;
   height: 400px;
 }
 
-.section {
-  gap: 20px;
-}
-
-.section .container .form {
+.container-bottom {
   width: 100%;
-}
-
-.section .container .form .dropdown {
-  width: 100%;
-}
-
-.section .container .form .dropdown-trigger {
-  width: 100%;
-}
-
-.section .container .form .dropdown .dropdown-menu {
-  width: 100%;
-}
-
-.section .container .form .dropdown .dropdown-content {
-  max-height: 270px;
-  overflow-y: scroll;
-}
-
-.table {
-  min-width: 800px;
 }
 
 @media (max-width: 800px) {
-  .section {
+  .container-top {
     flex-direction: column-reverse;
   }
 }

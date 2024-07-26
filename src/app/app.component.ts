@@ -10,6 +10,10 @@ import {
 import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
 
+import { FormComponent } from './components/CoreComponents/form/form.component';
+import { TableComponent } from './components/CoreComponents/table/table.component';
+import { PaginationComponent } from './components/CoreComponents/pagination/pagination.component';
+
 import { FuelService } from './services/FuelService/fuel.service';
 import { GeocodingService } from './services/GeoCodingService/geocoding.service';
 import { SortPipe } from './pipes/SortPipe/sort.pipe';
@@ -19,6 +23,9 @@ import { SortPipe } from './pipes/SortPipe/sort.pipe';
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    FormComponent,
+    TableComponent,
+    PaginationComponent,
     FormsModule,
     CommonModule,
     RouterOutlet,
@@ -112,6 +119,7 @@ export class AppComponent implements OnInit {
 
     this.fuelResults = [];
     this.selectedIndex = null;
+    this.currentPage = 1;
     this.loader = true;
 
     this.fuelService
@@ -184,8 +192,11 @@ export class AppComponent implements OnInit {
     this.selectedStations = event.target.checked ? [...this.gasStations] : [];
   }
 
-  selectStation(station: string, event: any) {
-    if (event.target.checked) {
+  selectStation(event: { station: string; event: Event }) {
+    const { station, event: targetEvent } = event;
+    const target = targetEvent.target as HTMLInputElement;
+
+    if (target.checked) {
       this.selectedStations.push(station);
     } else {
       this.selectedStations = this.selectedStations.filter(
@@ -248,7 +259,8 @@ export class AppComponent implements OnInit {
     this.goToPage(this.currentPage - 1);
   }
 
-  highlightStation(station: any, index: number) {
+  highlightStation(event: { station: any; index: number }) {
+    const { station, index } = event;
     this.selectedIndex = (this.currentPage - 1) * this.itemsPerPage + index;
 
     const address = `${station.address}, ${station.city}`;
@@ -309,19 +321,19 @@ export class AppComponent implements OnInit {
     this.paginateResults();
   }
 
-  applySavedTheme(): void {
-    const savedTheme = localStorage.getItem('theme');
-    this.currentTheme = savedTheme || 'light';
-    document
-      .getElementsByTagName('html')[0]
-      .setAttribute('data-theme', this.currentTheme);
-  }
-
   toggleTheme() {
     this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
     document
       .getElementsByTagName('html')[0]
       .setAttribute('data-theme', this.currentTheme);
     localStorage.setItem('theme', this.currentTheme);
+  }
+
+  private applySavedTheme(): void {
+    const savedTheme = localStorage.getItem('theme');
+    this.currentTheme = savedTheme || 'light';
+    document
+      .getElementsByTagName('html')[0]
+      .setAttribute('data-theme', this.currentTheme);
   }
 }

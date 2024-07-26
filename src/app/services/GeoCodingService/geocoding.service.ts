@@ -13,6 +13,7 @@ export class GeocodingService {
 
   geocodeAddress(address: string): Observable<any> {
     const url = `${this.apiUrl}?q=${encodeURIComponent(address)}&key=${this.apiKey}&pretty=1`;
+    
     return this.http.get(url);
   }
 }

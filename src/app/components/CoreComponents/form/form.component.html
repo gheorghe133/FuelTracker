@@ -1,0 +1,137 @@
+<div class="form-title mb-5">
+  <h1 class="is-size-3 has-text-weight-semibold">{{ title }}</h1>
+  <button class="button" (click)="onToggleTheme()">
+    <span class="icon is-small">
+      @if (currentTheme === 'light') {
+         <i class="fa-solid fa-moon has-text-link is-size-5"></i>
+      } 
+      @else {
+         <i class="fa-solid fa-sun has-text-link is-size-5"></i>
+      }
+    </span>
+  </button>
+</div>
+
+<form class="form" [formGroup]="searchForm" (ngSubmit)="onSearch()">
+  <div class="field is-fullwidth">
+    <label class="label">Tip carburant</label>
+    <div class="control">
+      <div class="select is-fullwidth">
+        <select formControlName="carburant">
+          <option value="Benzina_Regular">Benzinǎ Standard</option>
+          <option value="Motorina_Regular">Motorinǎ Standard</option>
+          <option value="GPL">GPL</option>
+          <option value="Benzina_Premium">Benzinǎ Superioarǎ</option>
+          <option value="Motorina_Premium">Motorinǎ Superioarǎ</option>
+          <option value="AdBlue">AdBlue</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="label">Nume locație</label>
+    <div class="control">
+      <label class="checkbox mr-2">
+        <input type="radio" formControlName="locatie" value="Judet" />
+        Raion
+      </label>
+      <label class="checkbox">
+        <input type="radio" formControlName="locatie" value="Oras" />
+        Localitate
+      </label>
+    </div>
+
+    <div class="control has-icons-right mt-2">
+      <input
+        class="input"
+        type="text"
+        placeholder="Locație"
+        formControlName="nume_locatie"
+      />
+      <span class="icon is-small is-right">
+        <i class="fa-solid fa-location-dot has-text-link"></i>
+      </span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="label">Rețele benzinǎrii preferate</label>
+    <div class="control">
+      <div class="dropdown" [ngClass]="{ 'is-active': dropdownOpen }">
+        <div class="dropdown-trigger">
+          <button
+            type="button"
+            class="button is-fullwidth is-justify-content-space-between"
+            aria-haspopup="true"
+            aria-controls="dropdown-menu3"
+            (click)="onToggleDropdown()"
+          >
+            <span> Benzinǎrii selectate ({{ selectedStations.length }}) </span>
+            <span class="icon is-small">
+              <i class="fas fa-angle-down has-text-link" aria-hidden="true"></i>
+            </span>
+          </button>
+        </div>
+        <div class="dropdown-menu" id="dropdown-menu3" role="menu">
+          <div class="dropdown-content">
+            <div class="dropdown-item">
+              <label class="checkbox">
+                <input
+                  type="checkbox"
+                  (change)="onSelectAll($event)"
+                  [checked]="areAllSelected()"
+                />
+                Toate
+              </label>
+            </div>
+            <hr class="dropdown-divider" />
+            @for(station of gasStations; track $index){
+              <div class="dropdown-item">
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    [value]="station"
+                    (change)="onSelectStation(station, $event)"
+                    [checked]="isSelected(station)"
+                  />
+                  {{ station }}
+                </label>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="control">
+      <div class="grid mt-5">
+        <div class="cell">
+          <button
+            class="button is-link is-fullwidth"
+            type="submit"
+            [disabled]="searchForm.invalid || selectedStations.length === 0"
+            [ngClass]="{ 'is-loading': loader }"
+          >
+            Submit
+          </button>
+        </div>
+        <div class="cell">
+          <button
+            class="button is-link is-light is-fullwidth"
+            type="button"
+            (click)="onCancel()"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<div class="container has-text-right p-3" *ngIf="hasError">
+  <p class="has-text-danger-60">{{ errorMessage }}</p>
+</div>
