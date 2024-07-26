@@ -10,6 +10,7 @@ import {
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
+import { GeocodingService } from './services/GeoCodingService/geocoding.service';
 
 @Component({
   selector: 'app-root',
@@ -58,6 +59,7 @@ export class AppComponent {
 
   constructor(
     private fuelService: FuelService,
+    private geocodingService: GeocodingService,
     private formBuilder: FormBuilder,
     private router: Router,
     private route: ActivatedRoute
@@ -135,15 +137,44 @@ export class AppComponent {
           // Curăță markerii anteriori
           this.clearMarkers();
 
-          // Adaugă markerii pentru fiecare benzinărie
+          // Geocodare pentru fiecare adresă
           result.forEach((station) => {
-            // Asumăm că `station` conține `latitude` și `longitude`
-            const marker = L.marker([station.latitude, station.longitude])
-              .addTo(this.map)
-              .bindPopup(station.name || 'Unknown')
-              .openPopup();
+            const address = `${station.address}, ${station.city}`;
+            this.geocodingService.geocodeAddress(address).subscribe({
+              next: (geoResult: any) => {
+                if (geoResult.results.length > 0) {
+                  const { lat, lng } = geoResult.results[0].geometry;
 
-            this.markers.push(marker);
+                  // Creează icon-ul din URL-ul imaginii
+                  const stationIcon = L.icon({
+                    iconUrl: `https://www.peco.md/${station.image}`, // URL-ul imaginii ca icon
+                    iconSize: [32, 32], // Dimensiunea icon-ului (ajustează după necesitate)
+                    iconAnchor: [16, 32], // Punctul de ancorare al icon-ului (ajustează după necesitate)
+                    popupAnchor: [0, -32], // Punctul de ancorare al popup-ului (ajustează după necesitate)
+                  });
+
+                  // Creează HTML-ul pentru popup
+                  const popupContent = `
+                  <div style="width: 100px;">
+                    <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 100%; height: auto;"/>
+                    <p><strong>${station.gasStation}</strong></p>
+                    <p>Preț: ${station.price}</p>
+                    <p>Data: ${station.date}</p>
+                  </div>
+                  `;
+
+                  const marker = L.marker([lat, lng], { icon: stationIcon })
+                    .addTo(this.map)
+                    .bindPopup(popupContent)
+                    .openPopup();
+
+                  this.markers.push(marker);
+                }
+              },
+              error: (error) => {
+                console.error('Geocoding error:', error);
+              },
+            });
           });
         },
         error: (error) => {
