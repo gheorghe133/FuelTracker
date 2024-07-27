@@ -67,6 +67,7 @@ export class AppComponent implements OnInit {
   hasError = false;
   loader = false;
   fuelResults: any[] = [];
+  searchMade: boolean = false; 
 
   selectedIndex: number | null = null;
   selectedMarker: L.Marker | null = null;
@@ -117,6 +118,7 @@ export class AppComponent implements OnInit {
     const { carburant, locatie, nume_locatie } = this.searchForm.value;
     const retea = this.selectedStations;
 
+    this.searchMade = true; 
     this.fuelResults = [];
     this.selectedIndex = null;
     this.currentPage = 1;

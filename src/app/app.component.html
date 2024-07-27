@@ -25,27 +25,37 @@
       </div>
     </div>
 
-    <div class="container-bottom" *ngIf="fuelResults.length > 0">
-      <app-table
-        [fuelResults]="fuelResults"
-        [paginatedResults]="paginatedResults"
-        [currentPage]="currentPage"
-        [itemsPerPage]="itemsPerPage"
-        [totalPages]="totalPages"
-        [sortField]="sortField"
-        [sortOrder]="sortOrder"
-        [selectedIndex]="selectedIndex"
-        (sort)="sort($event)"
-        (highlightStation)="highlightStation($event)"
-      />
-      <app-pagination
-        [currentPage]="currentPage"
-        [totalPages]="totalPages"
-        [itemsPerPage]="itemsPerPage"
-        (previousPage)="previousPage()"
-        (nextPage)="nextPage()"
-        (goToPage)="goToPage($event)"
-      />
-    </div>
+    @if(fuelResults.length > 0){
+      <div class="container-bottom">
+        <app-table
+          [fuelResults]="fuelResults"
+          [paginatedResults]="paginatedResults"
+          [currentPage]="currentPage"
+          [itemsPerPage]="itemsPerPage"
+          [totalPages]="totalPages"
+          [sortField]="sortField"
+          [sortOrder]="sortOrder"
+          [selectedIndex]="selectedIndex"
+          (sort)="sort($event)"
+          (highlightStation)="highlightStation($event)"
+        />
+        <app-pagination
+          [currentPage]="currentPage"
+          [totalPages]="totalPages"
+          [itemsPerPage]="itemsPerPage"
+          (previousPage)="previousPage()"
+          (nextPage)="nextPage()"
+          (goToPage)="goToPage($event)"
+        />
+      </div>
+    }
   </div>
 </section>
+
+@if(fuelResults.length === 0 && this.searchMade && loader == false) {
+  <section class="section has-text-centered">
+    <h5 class="title is-5">
+      Nu există benzinării care să corespundă criteriilor selectate
+    </h5>
+  </section>
+}
