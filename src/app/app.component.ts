@@ -221,6 +221,7 @@ export class AppComponent implements OnInit {
       locatie: null,
       nume_locatie: null,
     });
+    this.searchMade = false;
     this.fuelResults = [];
     this.selectedStations = [];
     this.clearMarkers();
