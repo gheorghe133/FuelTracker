@@ -316,7 +316,6 @@ export class AppComponent implements OnInit {
       if (this.selectedMarker) {
         this.map.removeLayer(this.selectedMarker);
         this.selectedMarker = null;
-        this.map.setView([this.latitude, this.longitude], this.zoom);
       }
       this.selectedIndex = null;
     } else {
