@@ -16,4 +16,9 @@ export class GeocodingService {
     
     return this.http.get(url);
   }
+
+  reverseGeocode(lat: number, lng: number): Observable<any> {
+    const url = `${this.apiUrl}?q=${lat}+${lng}&key=${this.apiKey}&language=ro&pretty=1`;
+    return this.http.get(url);
+  }
 }

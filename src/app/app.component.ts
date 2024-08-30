@@ -65,9 +65,10 @@ export class AppComponent implements OnInit {
   selectedStations: string[] = [];
   errorMessage!: string;
   hasError = false;
-  loader = false;
+  searchLoader = false;
+  myLocationLoader = false;
   fuelResults: any[] = [];
-  searchMade: boolean = false; 
+  searchMade: boolean = false;
 
   selectedIndex: number | null = null;
   selectedMarker: L.Marker | null = null;
@@ -114,22 +115,57 @@ export class AppComponent implements OnInit {
     }).addTo(this.map);
   }
 
-  public search() {
+  useMyLocation(): void {
+    this.myLocationLoader = true;
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+
+          this.geocodingService.reverseGeocode(lat, lng).subscribe({
+            next: (response: any) => {
+              if (response.results.length > 0) {
+                const address = response.results[0].components.city;
+                this.searchForm.patchValue({ nume_locatie: address });
+              }
+
+              this.myLocationLoader = false;
+            },
+            error: (error) => {
+              console.error('Geocoding error:', error);
+              this.myLocationLoader = false;
+            },
+          });
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          this.myLocationLoader = false;
+        }
+      );
+    } else {
+      console.error('Geolocation is not supported by this browser.');
+      this.myLocationLoader = false;
+    }
+  }
+
+  search() {
     const { carburant, locatie, nume_locatie } = this.searchForm.value;
     const retea = this.selectedStations;
 
-    this.searchMade = true; 
+    this.searchMade = true;
     this.fuelResults = [];
     this.selectedIndex = null;
     this.currentPage = 1;
-    this.loader = true;
+    this.searchLoader = true;
 
     this.fuelService
       .getStations(carburant, locatie, nume_locatie, retea)
       .subscribe({
         next: (result: any[]) => {
           this.hasError = false;
-          this.loader = false;
+          this.searchLoader = false;
           this.fuelResults = result;
           this.totalItems = result.length;
 
@@ -139,7 +175,7 @@ export class AppComponent implements OnInit {
         },
         error: (error) => {
           this.hasError = true;
-          this.loader = false;
+          this.searchLoader = false;
           this.errorMessage = error.error.error;
         },
       });
@@ -175,8 +211,8 @@ export class AppComponent implements OnInit {
 
             const marker = L.marker([lat, lng], { icon: stationIcon })
               .addTo(this.map)
-              .bindPopup(popupContent)
-              .openPopup();
+              // .bindPopup(popupContent)
+              // .openPopup();
 
             this.markers.push(marker);
           }
@@ -247,18 +283,18 @@ export class AppComponent implements OnInit {
     );
   }
 
-  public goToPage(page: number) {
+  goToPage(page: number) {
     if (page > 0 && page <= this.totalPages) {
       this.currentPage = page;
       this.paginateResults();
     }
   }
 
-  public nextPage() {
+  nextPage() {
     this.goToPage(this.currentPage + 1);
   }
 
-  public previousPage() {
+  previousPage() {
     this.goToPage(this.currentPage - 1);
   }
 
