@@ -161,6 +161,8 @@ export class AppComponent implements OnInit {
     this.currentPage = 1;
     this.searchLoader = true;
 
+    this.clearMarkers();
+
     this.fuelService
       .getStations(carburant, locatie, nume_locatie, retea)
       .subscribe({
@@ -170,7 +172,6 @@ export class AppComponent implements OnInit {
           this.fuelResults = result;
           this.totalItems = result.length;
 
-          this.clearMarkers();
           this.paginateResults();
           this.geocodeStations();
         },
@@ -185,6 +186,12 @@ export class AppComponent implements OnInit {
   private clearMarkers() {
     this.markers.forEach((marker) => this.map.removeLayer(marker));
     this.markers = [];
+
+    if (this.selectedMarker) {
+      this.selectedMarker.closePopup();
+      this.map.removeLayer(this.selectedMarker);
+      this.selectedMarker = null;
+    }
   }
 
   private geocodeStations() {
