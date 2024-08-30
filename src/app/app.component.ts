@@ -8,6 +8,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { forkJoin, map } from 'rxjs';
 import * as L from 'leaflet';
 
 import { FormComponent } from './components/CoreComponents/form/form.component';
@@ -189,46 +190,54 @@ export class AppComponent implements OnInit {
   private geocodeStations() {
     const bounds = L.latLngBounds();
 
-    this.paginatedResults.forEach((station) => {
+    const createMarker = (station: any, lat: number, lng: number) => {
+      const stationIcon = L.icon({
+        iconUrl: `https://www.peco.md/${station.image}`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32],
+      });
+
+      const popupContent = `
+        <div style="width: 150px;">
+          <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 50px; height: 50px;"/>
+          <p><b>${station.gasStation}</b></p>
+          <p>Adresă: <b>${station.address}</b></p>
+          <p>Oraș: <b>${station.city}</b></p>
+          <p>Preț: <b>${station.price}</b></p>
+          <p>Data: <b>${station.date}</b></p>
+        </div>
+      `;
+
+      return L.marker([lat, lng], { icon: stationIcon })
+        .addTo(this.map)
+        .bindPopup(popupContent);
+    };
+
+    const geocodeRequests = this.paginatedResults.map((station) => {
       const address = `${station.address}, ${station.city}`;
-      this.geocodingService.geocodeAddress(address).subscribe({
-        next: (geoResult: any) => {
+      return this.geocodingService.geocodeAddress(address).pipe(
+        map((geoResult: any) => {
           if (geoResult.results.length > 0) {
             const { lat, lng } = geoResult.results[0].geometry;
-            const stationIcon = L.icon({
-              iconUrl: `https://www.peco.md/${station.image}`,
-              iconSize: [32, 32],
-              iconAnchor: [16, 32],
-              popupAnchor: [0, -32],
-            });
-
-            const popupContent = `
-              <div style="width: 150px;">
-                <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 50px; height: 50px;"/>
-                <p><b>${station.gasStation}</b></p>
-                <p>Adresă: <b>${station.address}</b></p>
-                <p>Oraș: <b>${station.city}</b></p>
-                <p>Preț: <b>${station.price}</b></p>
-                <p>Data: <b>${station.date}</b></p>
-              </div>
-            `;
-
-            const marker = L.marker([lat, lng], { icon: stationIcon })
-              .addTo(this.map)
-              .bindPopup(popupContent);
-
-            this.markers.push(marker);
-
+            const marker = createMarker(station, lat, lng);
             bounds.extend([lat, lng]);
+            return marker;
           }
-        },
-        error: (error) => console.error('Geocoding error:', error),
-        complete: () => {
-          if (bounds.isValid()) {
-            this.map.fitBounds(bounds, { padding: [20, 20] });
-          }
-        },
-      });
+        })
+      );
+    });
+
+    forkJoin(geocodeRequests).subscribe({
+      next: (markers) => {
+        this.markers = markers.filter(
+          (marker) => marker !== undefined
+        ) as L.Marker[];
+        if (bounds.isValid()) {
+          this.map.fitBounds(bounds, { padding: [20, 20] });
+        }
+      },
+      error: (error) => console.error('Geocoding error:', error),
     });
   }
 
