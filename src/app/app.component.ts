@@ -187,6 +187,8 @@ export class AppComponent implements OnInit {
   }
 
   private geocodeStations() {
+    const bounds = L.latLngBounds();
+
     this.paginatedResults.forEach((station) => {
       const address = `${station.address}, ${station.city}`;
       this.geocodingService.geocodeAddress(address).subscribe({
@@ -201,23 +203,31 @@ export class AppComponent implements OnInit {
             });
 
             const popupContent = `
-              <div style="width: 100px;">
-                <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 100%; height: auto;"/>
-                <p><strong>${station.gasStation}</strong></p>
-                <p>Preț: ${station.price}</p>
-                <p>Data: ${station.date}</p>
+              <div style="width: 150px;">
+                <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 50px; height: 50px;"/>
+                <p><b>${station.gasStation}</b></p>
+                <p>Adresă: <b>${station.address}</b></p>
+                <p>Oraș: <b>${station.city}</b></p>
+                <p>Preț: <b>${station.price}</b></p>
+                <p>Data: <b>${station.date}</b></p>
               </div>
             `;
 
             const marker = L.marker([lat, lng], { icon: stationIcon })
               .addTo(this.map)
-              // .bindPopup(popupContent)
-              // .openPopup();
+              .bindPopup(popupContent);
 
             this.markers.push(marker);
+
+            bounds.extend([lat, lng]);
           }
         },
         error: (error) => console.error('Geocoding error:', error),
+        complete: () => {
+          if (bounds.isValid()) {
+            this.map.fitBounds(bounds, { padding: [20, 20] });
+          }
+        },
       });
     });
   }
@@ -300,46 +310,58 @@ export class AppComponent implements OnInit {
 
   highlightStation(event: { station: any; index: number }) {
     const { station, index } = event;
-    this.selectedIndex = (this.currentPage - 1) * this.itemsPerPage + index;
+    const currentIndex = (this.currentPage - 1) * this.itemsPerPage + index;
 
-    const address = `${station.address}, ${station.city}`;
-    this.geocodingService.geocodeAddress(address).subscribe({
-      next: (geoResult: any) => {
-        if (geoResult.results.length > 0) {
-          const { lat, lng } = geoResult.results[0].geometry;
+    if (this.selectedIndex === currentIndex) {
+      if (this.selectedMarker) {
+        this.map.removeLayer(this.selectedMarker);
+        this.selectedMarker = null;
+        this.map.setView([this.latitude, this.longitude], this.zoom);
+      }
+      this.selectedIndex = null;
+    } else {
+      this.selectedIndex = currentIndex;
+      const address = `${station.address}, ${station.city}`;
+      this.geocodingService.geocodeAddress(address).subscribe({
+        next: (geoResult: any) => {
+          if (geoResult.results.length > 0) {
+            const { lat, lng } = geoResult.results[0].geometry;
 
-          if (this.selectedMarker) {
-            this.map.removeLayer(this.selectedMarker);
+            if (this.selectedMarker) {
+              this.map.removeLayer(this.selectedMarker);
+            }
+
+            const stationIcon = L.icon({
+              iconUrl: `https://www.peco.md/${station.image}`,
+              iconSize: [32, 32],
+              iconAnchor: [16, 32],
+              popupAnchor: [0, -32],
+            });
+
+            this.selectedMarker = L.marker([lat, lng], { icon: stationIcon })
+              .addTo(this.map)
+              .bindPopup(
+                `
+                <div style="width: 150px;">
+                  <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 50px; height: 50px;"/>
+                  <p><b>${station.gasStation}</b></p>
+                  <p>Adresă: <b>${station.address}</b></p>
+                  <p>Oraș: <b>${station.city}</b></p>
+                  <p>Preț: <b>${station.price}</b></p>
+                  <p>Data: <b>${station.date}</b></p>
+                </div>
+                `
+              )
+              .openPopup();
+
+            this.map.setView([lat, lng], 13);
+
+            this.scrollToMap();
           }
-
-          const stationIcon = L.icon({
-            iconUrl: `https://www.peco.md/${station.image}`,
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32],
-          });
-
-          this.selectedMarker = L.marker([lat, lng], { icon: stationIcon })
-            .addTo(this.map)
-            .bindPopup(
-              `
-              <div style="width: 100px;">
-                <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 100%; height: auto;"/>
-                <p><strong>${station.gasStation}</strong></p>
-                <p>Preț: ${station.price}</p>
-                <p>Data: ${station.date}</p>
-              </div>
-              `
-            )
-            .openPopup();
-
-          this.map.setView([lat, lng], 13);
-
-          this.scrollToMap();
-        }
-      },
-      error: (error) => console.error('Geocoding error:', error),
-    });
+        },
+        error: (error) => console.error('Geocoding error:', error),
+      });
+    }
   }
 
   private scrollToMap() {
