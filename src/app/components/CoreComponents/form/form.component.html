@@ -46,7 +46,7 @@
       <input
         class="input"
         type="text"
-        placeholder="Locație"
+        placeholder="Introduceți o locație"
         formControlName="nume_locatie"
       />
       <span class="icon is-small is-right">
@@ -132,6 +132,6 @@
   </div>
 </form>
 
-<div class="container has-text-right p-3" *ngIf="hasError">
+<div class="container has-text-centered p-3" *ngIf="hasError">
   <p class="has-text-danger-60">{{ errorMessage }}</p>
 </div>

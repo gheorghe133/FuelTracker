@@ -3,7 +3,6 @@ import { RouterOutlet } from '@angular/router';
 import {
   FormBuilder,
   FormGroup,
-  FormsModule,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
@@ -26,7 +25,6 @@ import { SortPipe } from './pipes/SortPipe/sort.pipe';
     FormComponent,
     TableComponent,
     PaginationComponent,
-    FormsModule,
     CommonModule,
     RouterOutlet,
     SortPipe,
