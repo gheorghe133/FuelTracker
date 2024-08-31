@@ -15,7 +15,8 @@ export class FormComponent {
   @Input() dropdownOpen: boolean;
   @Input() selectedStations: string[] = [];
   @Input() gasStations: string[] = [];
-  @Input() loader: boolean;
+  @Input() searchLoader: boolean;
+  @Input() myLocationLoader: boolean;
   @Input() hasError: boolean;
   @Input() errorMessage: string;
   @Input() currentTheme: string;
@@ -26,6 +27,7 @@ export class FormComponent {
   @Output() selectStation = new EventEmitter<{ station: string; event: Event }>();
   @Output() cancel = new EventEmitter<void>();
   @Output() toggleTheme = new EventEmitter<void>();
+  @Output() useMyLocation = new EventEmitter<void>();
 
   onSearch(): void {
     this.search.emit();
@@ -49,6 +51,10 @@ export class FormComponent {
 
   onToggleTheme(): void {
     this.toggleTheme.emit();
+  }
+
+  onUseMyLocation() {
+    this.useMyLocation.emit();
   }
 
   areAllSelected(): boolean {

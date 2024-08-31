@@ -8,7 +8,8 @@
           [dropdownOpen]="dropdownOpen"
           [selectedStations]="selectedStations"
           [gasStations]="gasStations"
-          [loader]="loader"
+          [searchLoader]="searchLoader"
+          [myLocationLoader]="myLocationLoader"
           [hasError]="hasError"
           [errorMessage]="errorMessage"
           [currentTheme]="currentTheme"
@@ -18,6 +19,7 @@
           (selectStation)="selectStation($event)"
           (cancel)="cancel()"
           (toggleTheme)="toggleTheme()"
+          (useMyLocation)="useMyLocation()"
         />
       </div>
       <div class="container-map">
@@ -52,7 +54,7 @@
   </div>
 </section>
 
-@if(fuelResults.length === 0 && this.searchMade && loader == false) {
+@if(fuelResults.length === 0 && this.searchMade && searchLoader == false) {
   <section class="section has-text-centered">
     <h5 class="title is-5">
       Nu există benzinării care să corespundă criteriilor selectate

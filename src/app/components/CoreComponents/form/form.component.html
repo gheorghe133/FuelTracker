@@ -3,10 +3,9 @@
   <button class="button" (click)="onToggleTheme()">
     <span class="icon is-small">
       @if (currentTheme === 'light') {
-         <i class="fa-solid fa-moon has-text-link is-size-5"></i>
-      } 
-      @else {
-         <i class="fa-solid fa-sun has-text-link is-size-5"></i>
+      <i class="fa-solid fa-moon has-text-link is-size-5"></i>
+      } @else {
+      <i class="fa-solid fa-sun has-text-link is-size-5"></i>
       }
     </span>
   </button>
@@ -41,8 +40,10 @@
         Localitate
       </label>
     </div>
+  </div>
 
-    <div class="control has-icons-right mt-2">
+  <div class="field is-grouped">
+    <div class="control has-icons-right is-expanded">
       <input
         class="input"
         type="text"
@@ -52,6 +53,16 @@
       <span class="icon is-small is-right">
         <i class="fa-solid fa-location-dot has-text-link"></i>
       </span>
+    </div>
+    <div class="control">
+      <button
+        class="button"
+        type="button"
+        [ngClass]="{ 'is-loading': myLocationLoader }"
+        (click)="onUseMyLocation()"
+      >
+        Locația mea
+      </button>
     </div>
   </div>
 
@@ -87,17 +98,17 @@
             </div>
             <hr class="dropdown-divider" />
             @for(station of gasStations; track $index){
-              <div class="dropdown-item">
-                <label class="checkbox">
-                  <input
-                    type="checkbox"
-                    [value]="station"
-                    (change)="onSelectStation(station, $event)"
-                    [checked]="isSelected(station)"
-                  />
-                  {{ station }}
-                </label>
-              </div>
+            <div class="dropdown-item">
+              <label class="checkbox">
+                <input
+                  type="checkbox"
+                  [value]="station"
+                  (change)="onSelectStation(station, $event)"
+                  [checked]="isSelected(station)"
+                />
+                {{ station }}
+              </label>
+            </div>
             }
           </div>
         </div>
@@ -113,9 +124,9 @@
             class="button is-link is-fullwidth"
             type="submit"
             [disabled]="searchForm.invalid || selectedStations.length === 0"
-            [ngClass]="{ 'is-loading': loader }"
+            [ngClass]="{ 'is-loading': searchLoader }"
           >
-            Submit
+            Cautǎ
           </button>
         </div>
         <div class="cell">
@@ -124,7 +135,7 @@
             type="button"
             (click)="onCancel()"
           >
-            Cancel
+            Anulare
           </button>
         </div>
       </div>

@@ -7,6 +7,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { forkJoin, map } from 'rxjs';
 import * as L from 'leaflet';
 
 import { FormComponent } from './components/CoreComponents/form/form.component';
@@ -63,9 +64,10 @@ export class AppComponent implements OnInit {
   selectedStations: string[] = [];
   errorMessage!: string;
   hasError = false;
-  loader = false;
+  searchLoader = false;
+  myLocationLoader = false;
   fuelResults: any[] = [];
-  searchMade: boolean = false; 
+  searchMade: boolean = false;
 
   selectedIndex: number | null = null;
   selectedMarker: L.Marker | null = null;
@@ -112,32 +114,68 @@ export class AppComponent implements OnInit {
     }).addTo(this.map);
   }
 
-  public search() {
+  useMyLocation(): void {
+    this.myLocationLoader = true;
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+
+          this.geocodingService.reverseGeocode(lat, lng).subscribe({
+            next: (response: any) => {
+              if (response.results.length > 0) {
+                const address = response.results[0].components.city;
+                this.searchForm.patchValue({ nume_locatie: address });
+              }
+
+              this.myLocationLoader = false;
+            },
+            error: (error) => {
+              console.error('Geocoding error:', error);
+              this.myLocationLoader = false;
+            },
+          });
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          this.myLocationLoader = false;
+        }
+      );
+    } else {
+      console.error('Geolocation is not supported by this browser.');
+      this.myLocationLoader = false;
+    }
+  }
+
+  search() {
     const { carburant, locatie, nume_locatie } = this.searchForm.value;
     const retea = this.selectedStations;
 
-    this.searchMade = true; 
+    this.searchMade = true;
     this.fuelResults = [];
     this.selectedIndex = null;
     this.currentPage = 1;
-    this.loader = true;
+    this.searchLoader = true;
+
+    this.clearMarkers();
 
     this.fuelService
       .getStations(carburant, locatie, nume_locatie, retea)
       .subscribe({
         next: (result: any[]) => {
           this.hasError = false;
-          this.loader = false;
+          this.searchLoader = false;
           this.fuelResults = result;
           this.totalItems = result.length;
 
-          this.clearMarkers();
           this.paginateResults();
           this.geocodeStations();
         },
         error: (error) => {
           this.hasError = true;
-          this.loader = false;
+          this.searchLoader = false;
           this.errorMessage = error.error.error;
         },
       });
@@ -146,41 +184,65 @@ export class AppComponent implements OnInit {
   private clearMarkers() {
     this.markers.forEach((marker) => this.map.removeLayer(marker));
     this.markers = [];
+
+    if (this.selectedMarker) {
+      this.selectedMarker.closePopup();
+      this.map.removeLayer(this.selectedMarker);
+      this.selectedMarker = null;
+    }
   }
 
   private geocodeStations() {
-    this.paginatedResults.forEach((station) => {
+    const bounds = L.latLngBounds();
+
+    const createMarker = (station: any, lat: number, lng: number) => {
+      const stationIcon = L.icon({
+        iconUrl: `https://www.peco.md/${station.image}`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32],
+      });
+
+      const popupContent = `
+        <div style="width: 150px;">
+          <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 50px; height: 50px;"/>
+          <p><b>${station.gasStation}</b></p>
+          <p>Adresă: <b>${station.address}</b></p>
+          <p>Oraș: <b>${station.city}</b></p>
+          <p>Preț: <b>${station.price}</b></p>
+          <p>Data: <b>${station.date}</b></p>
+        </div>
+      `;
+
+      return L.marker([lat, lng], { icon: stationIcon })
+        .addTo(this.map)
+        .bindPopup(popupContent);
+    };
+
+    const geocodeRequests = this.paginatedResults.map((station) => {
       const address = `${station.address}, ${station.city}`;
-      this.geocodingService.geocodeAddress(address).subscribe({
-        next: (geoResult: any) => {
+      return this.geocodingService.geocodeAddress(address).pipe(
+        map((geoResult: any) => {
           if (geoResult.results.length > 0) {
             const { lat, lng } = geoResult.results[0].geometry;
-            const stationIcon = L.icon({
-              iconUrl: `https://www.peco.md/${station.image}`,
-              iconSize: [32, 32],
-              iconAnchor: [16, 32],
-              popupAnchor: [0, -32],
-            });
-
-            const popupContent = `
-              <div style="width: 100px;">
-                <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 100%; height: auto;"/>
-                <p><strong>${station.gasStation}</strong></p>
-                <p>Preț: ${station.price}</p>
-                <p>Data: ${station.date}</p>
-              </div>
-            `;
-
-            const marker = L.marker([lat, lng], { icon: stationIcon })
-              .addTo(this.map)
-              .bindPopup(popupContent)
-              .openPopup();
-
-            this.markers.push(marker);
+            const marker = createMarker(station, lat, lng);
+            bounds.extend([lat, lng]);
+            return marker;
           }
-        },
-        error: (error) => console.error('Geocoding error:', error),
-      });
+        })
+      );
+    });
+
+    forkJoin(geocodeRequests).subscribe({
+      next: (markers) => {
+        this.markers = markers.filter(
+          (marker) => marker !== undefined
+        ) as L.Marker[];
+        if (bounds.isValid()) {
+          this.map.fitBounds(bounds, { padding: [20, 20] });
+        }
+      },
+      error: (error) => console.error('Geocoding error:', error),
     });
   }
 
@@ -245,63 +307,74 @@ export class AppComponent implements OnInit {
     );
   }
 
-  public goToPage(page: number) {
+  goToPage(page: number) {
     if (page > 0 && page <= this.totalPages) {
       this.currentPage = page;
       this.paginateResults();
     }
   }
 
-  public nextPage() {
+  nextPage() {
     this.goToPage(this.currentPage + 1);
   }
 
-  public previousPage() {
+  previousPage() {
     this.goToPage(this.currentPage - 1);
   }
 
   highlightStation(event: { station: any; index: number }) {
     const { station, index } = event;
-    this.selectedIndex = (this.currentPage - 1) * this.itemsPerPage + index;
+    const currentIndex = (this.currentPage - 1) * this.itemsPerPage + index;
 
-    const address = `${station.address}, ${station.city}`;
-    this.geocodingService.geocodeAddress(address).subscribe({
-      next: (geoResult: any) => {
-        if (geoResult.results.length > 0) {
-          const { lat, lng } = geoResult.results[0].geometry;
+    if (this.selectedIndex === currentIndex) {
+      if (this.selectedMarker) {
+        this.map.removeLayer(this.selectedMarker);
+        this.selectedMarker = null;
+      }
+      this.selectedIndex = null;
+    } else {
+      this.selectedIndex = currentIndex;
+      const address = `${station.address}, ${station.city}`;
+      this.geocodingService.geocodeAddress(address).subscribe({
+        next: (geoResult: any) => {
+          if (geoResult.results.length > 0) {
+            const { lat, lng } = geoResult.results[0].geometry;
 
-          if (this.selectedMarker) {
-            this.map.removeLayer(this.selectedMarker);
+            if (this.selectedMarker) {
+              this.map.removeLayer(this.selectedMarker);
+            }
+
+            const stationIcon = L.icon({
+              iconUrl: `https://www.peco.md/${station.image}`,
+              iconSize: [32, 32],
+              iconAnchor: [16, 32],
+              popupAnchor: [0, -32],
+            });
+
+            this.selectedMarker = L.marker([lat, lng], { icon: stationIcon })
+              .addTo(this.map)
+              .bindPopup(
+                `
+                <div style="width: 150px;">
+                  <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 50px; height: 50px;"/>
+                  <p><b>${station.gasStation}</b></p>
+                  <p>Adresă: <b>${station.address}</b></p>
+                  <p>Oraș: <b>${station.city}</b></p>
+                  <p>Preț: <b>${station.price}</b></p>
+                  <p>Data: <b>${station.date}</b></p>
+                </div>
+                `
+              )
+              .openPopup();
+
+            this.map.setView([lat, lng], 13);
+
+            this.scrollToMap();
           }
-
-          const stationIcon = L.icon({
-            iconUrl: `https://www.peco.md/${station.image}`,
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32],
-          });
-
-          this.selectedMarker = L.marker([lat, lng], { icon: stationIcon })
-            .addTo(this.map)
-            .bindPopup(
-              `
-              <div style="width: 100px;">
-                <img src="https://www.peco.md/${station.image}" alt="${station.gasStation}" style="width: 100%; height: auto;"/>
-                <p><strong>${station.gasStation}</strong></p>
-                <p>Preț: ${station.price}</p>
-                <p>Data: ${station.date}</p>
-              </div>
-              `
-            )
-            .openPopup();
-
-          this.map.setView([lat, lng], 13);
-
-          this.scrollToMap();
-        }
-      },
-      error: (error) => console.error('Geocoding error:', error),
-    });
+        },
+        error: (error) => console.error('Geocoding error:', error),
+      });
+    }
   }
 
   private scrollToMap() {

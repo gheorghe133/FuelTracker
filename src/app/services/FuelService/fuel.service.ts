@@ -2,11 +2,13 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { environment } from '../../../environments/environment.development';
+
 @Injectable({
   providedIn: 'root',
 })
 export class FuelService {
-  private apiURL = 'https://fuel-tracker-backed.vercel.app/fetch-data';
+  private readonly apiUrl = `${environment.server}/fetch-data`;
 
   constructor(private httpClient: HttpClient) {}
 
@@ -25,6 +27,6 @@ export class FuelService {
       retea: retea,
     };
 
-    return this.httpClient.post(this.apiURL, data, { headers: headers });
+    return this.httpClient.post(this.apiUrl, data, { headers: headers });
   }
 }
